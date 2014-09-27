@@ -2,6 +2,13 @@ SLAM
 ====
 
 SLAM : a method for the automatic Stylization and LAbelling of speech Melody
+(optimized only for LINUX distributions)
+
+/!\
+First of all :
+- download SLAM, SLAMpy and swipe-installer and put them in the same repository.
+- then, follow the instructions below:
+/!\
 
 1) install SWIPE module
 
