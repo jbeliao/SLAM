@@ -4,6 +4,11 @@ SLAM
 SLAM : a method for the automatic Stylization and LAbelling of speech Melody
 (optimized only for LINUX distributions)
 
+
+please cite :  Obin, N., Beliao, J., Veaux, C., & Lacheret, A. (2014). 
+               SLAM: Automatic Stylization and Labelling of Speech Melody. 
+               Speech Prosody 7, 246-250.
+
 /!\
 First of all :
 - download SLAM, SLAMpy and swipe-installer and put them in the same repository.
