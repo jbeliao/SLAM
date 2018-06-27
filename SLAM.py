@@ -49,6 +49,9 @@ display:
                    summary of the distribution of the stylizes 
 #####################################################################"""
 
+
+essai
+
 timeStep = .001 #in seconds, step for swipe pitch analysis
 voicedThreshold = 0.2 #for swipe
 
