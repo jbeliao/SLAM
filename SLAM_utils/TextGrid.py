@@ -1,0 +1,525 @@
+# -*- coding: utf-8 -*-
+# classes for Praat TextGrid data structures, and HTK .mlf files
+# Kyle Gorman <kgorman@ling.upenn.edu>
+# Modifications : Antoine Liutkus <antoine@liutkus.net> & Julie Beliao <julie@beliao.fr>
+
+# TODO: documentation
+
+import codecs
+import chardet    
+               
+
+def detectEncoding(f):
+    """
+    This helper method returns the file encoding corresponding to path f.
+    This handles UTF-8, which is itself an ASCII extension, so also ASCII.
+    """
+    encoding = 'ascii'
+    try:
+        with codecs.open(f, 'r', encoding='utf-16') as source:
+            source.readline()  # Read one line to ensure correct encoding
+    except UnicodeError:
+        try:
+            with codecs.open(f, 'r', encoding='utf-8-sig') as source: #revised utf-8 to utf-8-sig for utf-8 with byte order mark (BOM)  
+                source.readline()  # Read one line to ensure correct encoding
+        except UnicodeError:
+            with codecs.open(f, 'r', encoding='ascii') as source:
+                source.readline()  # Read one line to ensure correct encoding
+        else:
+            encoding = 'utf-8-sig' #revised utf-8 to utf-8-sig for utf-8 with byte order mark (BOM) 
+    else:
+        encoding = 'utf-16'
+
+    return encoding
+ 
+class mlf:
+        """" read in a HTK .mlf file. iterating over it gives you a list of 
+        TextGrids """
+
+        def __init__(self, file):
+                self.__items = []
+                self.__n = 0
+                text = open(file, 'r')
+                text.readline() # get rid of header
+                while 1: # loop over text
+                        name = text.readline()[1:-1]
+                        if name:
+                                grid = TextGrid()
+                                phon = IntervalTier('phones')
+                                word = IntervalTier('words')
+                                wmrk = ''
+                                wsrt = 0.
+                                wend = 0.
+                                while 1: # loop over the lines in each grid
+                                        line = text.readline().rstrip().split()
+                                        if len(line) == 4: # word on this baby
+                                                pmin = float(line[0]) / 10e6
+                                                pmax = float(line[1]) / 10e6
+                                                phon.append(Interval(pmin, pmax, line[2]))
+                                                if wmrk:
+                                                        word.append(Interval(wsrt, wend, wmrk))
+                                                wmrk = line[3]
+                                                wsrt = pmin
+                                                wend = pmax
+                                        elif len(line) == 3: # just phone
+                                                pmin = float(line[0]) / 10e6
+                                                pmax = float(line[1]) / 10e6
+                                                phon.append(Interval(pmin, pmax, line[2]))
+                                                wend = pmax 
+                                        else: # it's a period
+                                                word.append(Interval(wsrt, wend, wmrk))
+                                                self.__items.append(grid)
+                                                break
+                                grid.append(phon)
+                                grid.append(word)
+                                self.__n += 1
+                        else:
+                                text.close()
+                                break
+
+        def __iter__(self):
+                return iter(self.__items)
+
+        def __len__(self):
+                return self.__n
+
+        def __str__(self):
+                return '<MLF instance with %d TextGrids>' % self.__n
+
+class TextGrid:
+        """ represents Praat TextGrids as list of different types of tiers """
+
+        def __init__(self, name = None): 
+                self.__tiers = []
+                self.__n = 0
+                self.__xmin = None
+                self.__xmax = None
+                self.__name = name # this is just for the MLF case
+                self.__encoding = 'utf-8' #default
+                
+
+        def __str__(self):
+                return '<TextGrid with %d tiers>' % self.__n
+
+        def __iter__(self):
+                return iter(self.__tiers)
+
+        def __len__(self):
+                return self.__n
+
+        def __getitem__(self, i):
+                """ return the (i-1)th tier """
+                if isinstance(i,int):
+                        return self.__tiers[i] 
+                elif isinstance(i,str):
+                        for tier in self.__tiers:
+                            if tier.name() == i:
+                                return tier
+                        return None
+
+        def xmin(self):
+                return self.__xmin
+
+        def xmax(self):
+                return self.__xmax
+  
+        def span(self, xmin=True, xmax=True):
+            res = ()
+            if xmin==True:
+                res = res+(self.__xmin,)
+            if xmax==True:
+                res = res+(self.__xmax,)
+            return res  
+
+        def append(self, tier):
+                self.__tiers.append(tier)
+                if self.__xmax is not None:
+                        self.__xmax = max(self.__xmax,tier.xmax())
+                else:
+                        self.__xmax = tier.xmax()
+                if self.__xmin is not None:
+                        self.__xmin = min(self.__xmin,tier.xmin())
+                else:
+                        self.__xmin = tier.xmin()       
+                self.__n += 1
+
+        def read(self, file):
+                """ read TextGrid from Praat .TextGrid file """
+                #rawHeader=open(file,"r")
+                encoding_pronostic = detectEncoding(file) # chardet.detect(rawHeader.read())
+                #rawHeader.close()
+                #print("assuming encoding " + encoding_pronostic['encoding'] + ' with confidence ' + str(encoding_pronostic['confidence']*100)+'%')
+                #self.__encoding = encoding_pronostic['encoding']
+                text = codecs.open(file, 'r',encoding_pronostic)
+                text.readline() # header crap
+                text.readline()
+                text.readline()
+                self.__xmin = float(text.readline().strip(' \t').split()[2])
+                self.__xmax = float(text.readline().rstrip().split()[2])
+                text.readline()
+                m = int(text.readline().rstrip().split()[2]) # will be self.__n soon
+                text.readline()
+                for i in range(m): # loop over grids
+                        text.readline()
+                        meuh = text.readline()
+                        if meuh.rstrip().split()[2] == '"IntervalTier"': 
+                                inam = text.readline().rstrip().split()[2][1:-1]
+                                imin = float(text.readline().rstrip().split()[2])
+                                imax = float(text.readline().rstrip().split()[2])
+                                itie = IntervalTier(inam, imin, imax) # redundant FIXME
+                                n = int(text.readline().rstrip().split()[3])
+                                try:
+                                        for j in range(n):
+                                                text.readline().rstrip().split() # header junk
+                                                jmin = float(text.readline().rstrip().split()[2])
+                                                jmax = float(text.readline().rstrip().split()[2])
+                                                datatxt = text.readline()
+                                                jmrk = datatxt.split('"')[1]
+                                                itie.append(Interval(jmin, jmax, jmrk))
+                                except IndexError:
+                                        pass
+                                self.append(itie) 
+                        else: # pointTier or TextTier
+                                inam = text.readline().rstrip().split()[2][1:-1]
+                                print(meuh)
+                                imin = float(text.readline().rstrip().split()[2])
+                                imax = float(text.readline().rstrip().split()[2])
+                                itie = PointTier(inam, imin, imax) # redundant FIXME
+                                n = int(text.readline().rstrip().split()[3])
+                                try:
+                                        for j in range(n):
+                                                text.readline().rstrip() # header junk
+                                                jtim = float( text.readline().rstrip().split()[2])
+                                                datatxt = text.readline()
+                                                jmrk = datatxt.split('"')[1]
+                                                #jmrk = text.readline().rstrip().split()[2][1:-1]
+                                                itie.append(Point(jtim, jmrk))
+                                except IndexError:
+                                        pass
+                                self.append(itie)
+                text.close()
+
+        def write(self, text):
+                import sys
+                """ write it into a text file that Praat can read """
+                print(self.__encoding)
+                text = codecs.open(text, 'w','utf-8')
+                
+                text.write('File type = "ooTextFile"\n')
+                text.write('Object class = "TextGrid"\n\n')
+                text.write('xmin = %f\n' % self.__xmin)
+                text.write('xmax = %f\n' % self.__xmax)
+                text.write('tiers? <exists>\n')
+                text.write('size = %d\n' % self.__n)
+                text.write('item []:\n')
+
+                for (tier, n) in zip(self.__tiers, range(1, self.__n + 1)):
+                        text.write('\titem [%d]:\n' % n)
+                        if tier.__class__ == IntervalTier: 
+                                text.write('\t\tclass = "IntervalTier"\n')
+                                text.write('\t\tname = "%s"\n' % tier.name())
+                                text.write('\t\txmin = %f\n' % tier.xmin())
+                                text.write('\t\txmax = %f\n' % tier.xmax())
+                                text.write('\t\tintervals: size = %d\n' % len(tier))
+                                for (interval, o) in zip(tier, range(1, len(tier) + 1)): 
+                                        text.write('\t\t\tintervals [%d]:\n' % o)
+                                        text.write('\t\t\t\txmin = %f\n' % interval.xmin())
+                                        text.write('\t\t\t\txmax = %f\n' % interval.xmax())
+                                        text.write('\t\t\t\ttext = "%s"\n' % interval.mark())
+                        else: # PointTier
+                                text.write('\t\tclass = "TextTier"\n')
+                                text.write('\t\tname = "%s"\n' % tier.name())
+                                text.write('\t\txmin = %f\n' % tier.xmin())
+                                text.write('\t\txmax = %f\n' % tier.xmax())
+                                text.write('\t\tpoints: size = %d\n' % len(tier))
+                                for (point, o) in zip(tier, range(1, len(tier) + 1)):
+                                        text.write('\t\t\tpoints [%d]:\n' % o)
+                                        text.write('\t\t\t\ttime = %f\n' % point.time())
+                                        text.write('\t\t\t\tmark = "%s"\n' % point.mark())
+                text.close()
+
+class IntervalTier:
+        """ represents IntervalTier as a list plus some features: min/max time, 
+        size, and tier name """
+
+        def __init__(self, name = None, xmin = None, xmax = None):
+                self.__n = 0
+                self.__name = name
+                self.__xmin = xmin
+                self.__xmax = xmax
+                self.__intervals = []
+
+        def __str__(self):
+                return '<IntervalTier "%s" with %d points>' % (self.__name, self.__n)
+
+        def __iter__(self):
+                return iter(self.__intervals)
+
+        def __len__(self):
+                return self.__n
+
+        def __getitem__(self, i):
+                """ return the (i-1)th interval """
+                return self.__intervals[i]
+
+        def xmin(self):
+                return self.__xmin
+
+        def xmax(self):
+                return self.__xmax
+
+        def span(self, xmin=True, xmax=True):
+                res = ()
+                if xmin : res = res+(self.__xmin,)
+                if xmax : res = res+(self.__xmax,)
+                return res
+    
+        def name(self):
+                return self.__name
+  
+        def setname(self,name):
+                self.__name = name
+  
+        def closest(self,positions,end=False):
+                def argmin(distances,pos):
+                        #featuring ugly argmin, but I don't want to import numpy for this
+                        minimum=100000
+                        res=100000
+                        for i,d in enumerate(distances):
+                                if d < minimum: 
+                                        res=i
+                                        minimum=d
+                        return res
+
+                try:
+                        result = []
+                        for pos in positions:
+                                if end: distances= [abs(pos-i.xmax()) for i in self.__intervals]
+                                else : distances= [abs(pos-i.xmin()) for i in self.__intervals]
+                                result.append(argmin(distances,pos))
+                        return result
+                except TypeError: 
+                        return argmin(distances,positions)
+
+        def append(self, interval):
+                self.__intervals.append(interval)
+                if self.__xmax is not None:
+                        self.__xmax = max(self.__xmax,interval.xmax())
+                else:
+                        self.__xmax = interval.xmax()
+                if self.__xmin is not None:
+                        self.__xmin = min(self.__xmin,interval.xmin())
+                else:
+                        self.__xmin = interval.xmin()   
+                self.__n += 1
+
+        def read(self, file):
+                text = open(file, 'r')
+                text.readline() # header junk 
+                text.readline()
+                text.readline()
+                self.__xmin = float(text.readline().rstrip().split()[2])
+                self.__xmax = float(text.readline().rstrip().split()[2])
+                self.__n = int(text.readline().rstrip().split()[3])
+                for i in range(self.__n):
+                        text.readline().rstrip() # header
+                        imin = float(text.readline().rstrip().split()[2]) 
+                        imax = float(text.readline().rstrip().split()[2])
+                        imrk = text.readline().rstrip().split()[2].replace('"', '') # txt
+                        self.__intervals.append(Interval(imin, imax, imrk))
+                text.close()
+
+        def write(self, file):
+                text = open(file, 'w')
+                text.write('File type = "ooTextFile"\n')
+                text.write('Object class = "IntervalTier"\n\n')
+                text.write('xmin = %f\n' % self.__xmin)
+                text.write('xmax = %f\n' % self.__xmax)
+                text.write('intervals: size = %d\n' % self.__n)
+                for (interval, n) in zip(self.__intervals, range(1, self.__n + 1)):
+                        text.write('intervals [%d]:\n' % n)
+                        text.write('\txmin = %f\n' % interval.xmin())
+                        text.write('\txmax = %f\n' % interval.xmax())
+                        text.write('\ttext = "%s"\n' % interval.mark())
+                text.close()
+
+class PointTier:
+        """ represents PointTier (also called TextTier for some reason) as a list 
+        plus some features: min/max time, size, and tier name """
+
+        def __init__(self, name = None, xmin = None, xmax = None):
+                self.__n = 0
+                self.__name = name
+                self.__xmin = xmin
+                self.__xmax = xmax
+                self.__points = []
+
+        def __str__(self):
+                return '<PointTier "%s" with %d points>' % (self.__name, self.__n)
+
+        def __iter__(self):
+                return iter(self.__points)
+        
+        def __len__(self):
+                return self.__n
+        
+        def __getitem__(self, i):
+                """ return the (i-1)th tier """
+                return self.__points[i]
+
+        def name(self):
+                return self.__name
+
+        def xmin(self):
+                return self.__xmin
+
+        def xmax(self): 
+                return self.__xmax
+  
+        def span(self, xmin=True, xmax=True):
+                res = ()
+                if xmin : res = res+(self.__xmin,)
+                if xmax : res = res+(self.__xmax,)
+                return res  
+
+        def append(self, point):
+                self.__points.append(point)
+                self.__xmax = point.time()
+                self.__n += 1
+
+        def read(self, file):
+                text = open(file, 'r')
+                text.readline() # header junk 
+                text.readline()
+                text.readline()
+                self.__xmin = float(text.readline().rstrip().split()[2])
+                self.__xmax = float(text.readline().rstrip().split()[2])
+                self.__n = int(text.readline().rstrip().split()[3])
+                for i in range(self.__n):
+                        text.readline().rstrip() # header
+                        itim = float(text.readline().rstrip().split()[2])
+                        imrk = text.readline().rstrip().split()[2].replace('"', '') # txt
+                        self.__points.append(Point(imrk, itim))
+                text.close()
+
+        def write(self, file):
+                text = open(file, 'w')
+                text.write('File type = "ooTextFile"\n')
+                text.write('Object class = "TextTier"\n\n')
+                text.write('xmin = %f\n' % self.__xmin)
+                text.write('xmax = %f\n' % self.__xmax)
+                text.write('points: size = %d\n' % self.__n)
+                for (point, n) in zip(self.__points, range(1, self.__n + 1)):
+                        text.write('points [%d]:\n' % n)
+                        text.write('\ttime = %f\n' % point.time())
+                        text.write('\tmark = "%s"\n' % point.mark())
+                text.close()
+
+class Interval:
+        """ represent an Interval """
+        def __init__(self, xmin, xmax, mark):
+                self.__xmin = xmin
+                self.__xmax = xmax
+                self.__mark = mark
+                self.uid=''
+                
+        def __str__(self):
+                return '<Interval "%s" %f:%f>' % (self.__mark, self.__xmin, self.__xmax)
+
+        def xmin(self):
+                return self.__xmin
+
+        def xmax(self):
+                return self.__xmax
+  
+        def span(self, xmin=True, xmax=True):
+                res = ()
+                if xmin : res = res+(self.__xmin,)
+                if xmax : res = res+(self.__xmax,)
+                return res
+                
+        def duration(self):
+                return self.__xmax-self.__xmin
+                
+        def mark(self):
+                return self.__mark
+  
+        def tostring(self):
+                return self.__mark
+
+class Point:
+        """ represent a Point """
+        def __init__(self, time, mark):
+                self.__time = time
+                self.__mark = mark
+        
+        def __str__(self):
+                return '<Point "%s" at %f>' % (self.__mark, self.__time)
+
+        def time(self):
+                return self.__time
+
+        def mark(self):
+                return self.__mark
+      
+        def xmin(self):
+                return self.__time
+        def xmax(self):
+                return self.__time              
+          
+def getUniqueIntervals(intervals):
+        #keeps unique intervals in the list. The decision is made using the
+        #xmin and xmax properties of the intervals. Both are differents in
+        #returned list
+        result = []
+        cles = []
+        for interval in intervals:
+                cle = hash((interval.xmin(),interval.xmax()))
+                if cle not in cles:
+                        result.append(interval)
+                        cles.append(cle)
+        return result
+
+def getMatchingIntervals(intervals,tier,strict=True,just_intersection = False):
+#assumes intervals is a list of objects with xmin() and xmax() methods
+                if not len(intervals):
+                        return []
+                eps = 1E-5              
+                #aggregating intervals into time segments       
+                startSlices = []
+                stopSlices = []
+                for interval in sorted(intervals,key=lambda i:i.xmin()):
+                        start = interval.xmin()
+                        stop = interval.xmax()
+                        startMatch = [pos for pos,x in enumerate(stopSlices) if abs(start - x) < eps]
+                        stopMatch  = [pos for pos,x in enumerate(startSlices) if abs(stop - x) < eps]           
+                        if len(startMatch) or len(stopMatch):
+                                for match in startMatch:
+                                        stopSlices[match] = stop
+                                for match in stopMatch:
+                                        startSlices[match] = start
+                                continue
+                        startSlices.append(start)
+                        stopSlices.append(stop)         
+                #now finding intervals in tier which are contained by at least one of the slices,
+                #either strictly or partly
+                matching = []
+                for interval in tier:
+                        start = interval.xmin()
+                        stop = interval.xmax()
+                        found = False
+                        for (startslice,stopslice) in zip(startSlices,stopSlices):
+                                if strict:
+                                        if ( (start >= startslice) and (stop <= stopslice) ):
+                                                found = True
+                                else :
+                                        if just_intersection == False:
+                                                if (  ( (start <= stopslice)   and (stop >= stopslice  ) )
+                                                                                                or( (start <= startslice) and (stop >= startslice) ) ):
+                                                        found = True
+                                        else : 
+                                                if (  min(stopslice,stop) - max(startslice,start) > 0  ): found=True
+                        if found:
+                                matching.append(interval)                                               
+                matching.sort(key=lambda inter: inter.xmax())           
+                return matching

@@ -1,0 +1,70 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0 
+xmax = 2.222358276643991 
+tiers? <exists> 
+size = 3 
+item []: 
+    item [1]:
+        class = "IntervalTier" 
+        name = "syll" 
+        xmin = 0 
+        xmax = 2.222358276643991 
+        intervals: size = 7 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.535 
+            text = "_" 
+        intervals [2]:
+            xmin = 0.535 
+            xmax = 0.785 
+            text = "john" 
+        intervals [3]:
+            xmin = 0.785 
+            xmax = 1.0314781758573783 
+            text = "went" 
+        intervals [4]:
+            xmin = 1.0314781758573783 
+            xmax = 1.0835096794132797 
+            text = "to" 
+        intervals [5]:
+            xmin = 1.0835096794132797 
+            xmax = 1.3920685958494385 
+            text = "nor" 
+        intervals [6]:
+            xmin = 1.3920685958494385 
+            xmax = 1.9149999999999998 
+            text = "way" 
+        intervals [7]:
+            xmin = 1.9149999999999998 
+            xmax = 2.222358276643991 
+            text = "_" 
+    item [2]:
+        class = "IntervalTier" 
+        name = "ortho" 
+        xmin = 0 
+        xmax = 2.222358276643991 
+        intervals: size = 2 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.535 
+            text = "_" 
+        intervals [2]:
+            xmin = 0.535 
+            xmax = 2.222358276643991 
+            text = "john went to norway" 
+    item [3]:
+        class = "IntervalTier" 
+        name = "locuteur" 
+        xmin = 0 
+        xmax = 2.222358276643991 
+        intervals: size = 2 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.535 
+            text = "_" 
+        intervals [2]:
+            xmin = 0.535 
+            xmax = 2.222358276643991 
+            text = "Gilles" 
