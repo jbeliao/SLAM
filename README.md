@@ -20,9 +20,8 @@ Sources of swipe are provided in the swipe-installer directory. These are slight
   
 2) Install the following libraries required by SLAM:
 
-    make 
-    sudo apt-get install liblibblas-dev liblapack-dev libfftw3-dev libsndfile1-dev swig
-   sudo apt-get install python-numpy python-scipy python-matplotlib ipython ipython-notebook python-pandas python-sympy python-nose
+            
+            sudo apt-get install python-numpy python-scipy python-matplotlib ipython ipython-notebook python-pandas python-sympy python-nose
   
 How to use
 ------------
