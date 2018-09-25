@@ -18,9 +18,11 @@ How to install
 Swipe, by Kyle Gorman (http://ling.upenn.edu/~kgorman/c/swipe/),  is a pitch estimation algorithm which is required for SLAM to work. 
 Sources of swipe are provided in the swipe-installer directory. These are slightly modified versions different from the official github release. Modifications are only for the purpose of swipe compiling under C89 instead of C99 standards.
   
-2) Install the following libraries required by SLAM
+2) Install the following libraries required by SLAM:
 
-  sudo apt-get install python-numpy python-scipy python-matplotlib ipython ipython-notebook python-pandas python-sympy python-nose
+    make 
+    sudo apt-get install liblibblas-dev liblapack-dev libfftw3-dev libsndfile1-dev swig
+   sudo apt-get install python-numpy python-scipy python-matplotlib ipython ipython-notebook python-pandas python-sympy python-nose
   
 How to use
 ------------
