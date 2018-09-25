@@ -27,13 +27,16 @@ Sources of swipe are provided in the swipe-installer directory. These are slight
 How to use
 ------------
 
-1) drop your wav files and textgrid files in the corresponding directories. wav and textgrid files must come in pair of the same name 
+1) Drop your wav files and textgrid files in the corresponding directories. wav and textgrid files must come in pair of the same name 
      example:
      "myfile1.wav" "myfile1.TextGrid" "myfile2.wav" "myfile2.TextGrid"
 
-2) open a terminal and go to the SLAM directory
-3) type "python SLAM.py"
-4) follow the instructions.
+2) Open a terminal and go to the SLAM directory
+3) Execute
+
+        python SLAM.py
+
+4) Follow the instructions.
 
 How to configure
 ------------
