@@ -11,7 +11,7 @@ please cite :  Obin, N., Beliao, J., Veaux, C., & Lacheret, A. (2014).
 
 /!\
 First of all :
-- download SLAM, SLAMpy and swipe-installer and put them in the same repository.
+- download SLAM and swipe-installer and put them in the same repository.
 - then, follow the instructions below:
 /!\
 
