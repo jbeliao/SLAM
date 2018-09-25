@@ -1,42 +1,46 @@
 SLAM
 ====
 
-SLAM : a method for the automatic Stylization and LAbelling of speech Melody
-(optimized only for LINUX distributions)
+SLAM : a method for the automatic Stylization and LAbelling of speech Melody (optimized only for LINUX distributions)
+Compatible with Python 3.6
 
+How to cite
+------------
 
-please cite :  Obin, N., Beliao, J., Veaux, C., & Lacheret, A. (2014). 
-               SLAM: Automatic Stylization and Labelling of Speech Melody. 
-               Speech Prosody 7, 246-250.
+N. Obin,  J. Beliao, C., Veaux, A. Lacheret (2014). SLAM: Automatic Stylization and Labelling of Speech Melody. Speech Prosody, 246-250.
 
-/!\
-First of all :
-- download SLAM, SLAMpy and swipe-installer and put them in the same repository.
-- then, follow the instructions below:
-/!\
+How to install
+------------
 
-1) install SWIPE module
+0) Download or clone SLAM and swipe-installer and put them in the same repository.
 
-swipe, by Kyle Gorman (http://ling.upenn.edu/~kgorman/c/swipe/),  is required for SLAM to work. 
+1) Install SWIPE module
+
+Swipe, by Kyle Gorman (http://ling.upenn.edu/~kgorman/c/swipe/),  is a pitch estimation algorithm which is required for SLAM to work. 
 Sources of swipe are provided in the swipe-installer directory. These are slightly modified versions different from the official github release. Modifications are only for the purpose of swipe compiling under C89 instead of C99 standards.
+  
+2) Install the following libraries required by SLAM:
 
-To install swipe, proceed as follows:
+            
+            sudo apt-get install python-numpy python-scipy python-matplotlib ipython ipython-notebook python-pandas python-sympy python-nose
+  
+How to use
+------------
 
-   a) open a terminal and go to the swipe-installer directory
-   b) sudo apt-get install libblas-dev liblapack-dev libfftw3-dev libsndfile1-dev swig python-scipy
-   c) make
-   d) sudo make install
-
-   
-2) Use SLAM
-   a) drop your wav files and textgrid files in the corresponding directories. wav and textgrid files must come in pair of the same name 
+1) Drop your wav files and textgrid files in the corresponding directories. wav and textgrid files must come in pair of the same name 
      example:
      "myfile1.wav" "myfile1.TextGrid" "myfile2.wav" "myfile2.TextGrid"
 
-   b) open a terminal and go to the SLAM directory
-   c) type "python SLAM.py"
-   d) follow the instructions.
+2) Open a terminal and go to the SLAM directory
+3) Execute
 
-3) Configure SLAM
+        python SLAM.py
+
+4) Follow the instructions.
+
+How to configure
+------------
 
 you can open SLAM.py and modify the parameters to suit your needs. 
+
+
