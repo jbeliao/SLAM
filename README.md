@@ -2,6 +2,7 @@ SLAM
 ====
 
 SLAM : a method for the automatic Stylization and LAbelling of speech Melody (optimized only for LINUX distributions)
+Compatible with Python 3.6
 
 How to cite:
 ------------
