@@ -4,7 +4,7 @@
 """
 import matplotlib.pylab as pl
 import numpy as np
-import SLAM_modules.TextGrid as tg
+import SLAM_utils.TextGrid as tg
 
 def hz2cent(f0_Hz):
     return 1200.0*np.log2( np.maximum(1E-5,np.double(f0_Hz) ))
@@ -59,7 +59,7 @@ def SLAM1(semitones):
         semitones = list(np.array(semitones)[::r])
     t = np.array(range(len(semitones)))/float(len(semitones))
     if 10<len(semitones):
-        import SLAM_modules.lowess as lowess
+        import SLAM_utils.lowess as lowess
         smooth = lowess.lowess(t,semitones)
     else:
         smooth = semitones

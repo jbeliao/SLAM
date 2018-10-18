@@ -50,7 +50,7 @@ display:
 #####################################################################"""
 
 
-essai
+#essai
 
 timeStep = .001 #in seconds, step for swipe pitch analysis
 voicedThreshold = 0.2 #for swipe
@@ -68,7 +68,7 @@ minLengthDisplay = 30 #min number of f0 points for an interval to be displayed
 #------------------------------------------------------
 
 #imports
-from SLAMpy import TextGrid, swipe, stylize
+from SLAM_utils import TextGrid, swipe, stylize
 import sys, glob, os
 import numpy as np
 
