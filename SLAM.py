@@ -28,7 +28,7 @@ PARAMETERS:
 
 I/O:
 ---
-* wavFile            : path to the wave file to process
+* srcFile : path to the wave or pitchTier file to process
 * inputTextgridFile  : path to the input TextGrid file 
 * outputTextgridFile : path to the output TextGrid file
 
@@ -57,10 +57,10 @@ voicedThreshold = 0.2 #for swipe
 
 #Tiers for the speaker and the target intervals, put your own tier names
 speakerTier= 'locuteur' 
-targetTier = 'packageType'
+targetTier = 'package'
 
 #display
-examplesDisplayCount = 5 #number of example plots to do. Possibly 0
+examplesDisplayCount = 1 #number of example plots to do. Possibly 0
 minLengthDisplay = 30 #min number of f0 points for an interval to be displayed
 
 
@@ -68,7 +68,7 @@ minLengthDisplay = 30 #min number of f0 points for an interval to be displayed
 #------------------------------------------------------
 
 #imports
-from SLAM_utils import TextGrid, swipe, stylize
+from SLAM_utils import TextGrid, swipe, stylize, praatUtil
 import sys, glob, os
 import numpy as np
 
@@ -101,9 +101,17 @@ styles = []
 totalN=0
 
 wavFiles = glob.glob('./data/*.wav')
-    
-for ifile, wavFile in enumerate(wavFiles):
-    basename =  os.path.split(wavFile)[1][:-4]
+pitchFiles = glob.glob('./data/*.PitchTier')
+
+#just ignore wave file if its PitchTier is present
+for pitchFile in pitchFiles:
+	basename = stylize.get_basename(pitchFile)
+	try: wavFiles.remove(basename+'.wav')
+	except: pass
+srcFiles = pitchFiles + wavFiles
+
+for ifile, srcFile in enumerate(srcFiles):
+    basename = stylize.get_basename(srcFile)
 
     outputTextgridFile = './output/%s.TextGrid'%basename
     inputTextgridFile =  './data/%s.TextGrid'%basename
@@ -130,9 +138,13 @@ for ifile, wavFile in enumerate(wavFiles):
     newTier = TextGrid.IntervalTier(name = '%sStyle'%targetTier, 
                            xmin = tg[targetTier].xmin(), xmax=tg[targetTier].xmax())    
             
-    #Create swipe file
-    print 'Computing pitch on wave file'
-    sf = swipe.Swipe(wavFile, pMin=75, pMax=500, s=timeStep, t=voicedThreshold, mel=False)
+    #Create swipe object from wave file or external PitchTier file
+    if stylize.get_extension(srcFile) == '.PitchTier':
+		print 'Reading pitch from pitch file'
+		sf = stylize.readPitchtier(srcFile)
+    else: # '.wav'
+		print 'Computing pitch on wave file'
+		sf = swipe.Swipe(srcFile, pMin=75, pMax=500, s=timeStep, t=voicedThreshold, mel=False)
     
     print 'Computing average register for each speaker' 
     registers = stylize.averageRegisters(sf, tg[speakerTier])
