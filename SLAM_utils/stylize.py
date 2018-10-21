@@ -4,8 +4,19 @@
 """
 import matplotlib.pylab as pl
 import numpy as np
-import SLAM_modules.TextGrid as tg
+import SLAM_utils.TextGrid as tg
+from SLAM_utils import praatUtil
+from SLAM_utils import swipe
+import os
 
+#handy funciotns
+def get_extension(file): return os.path.splitext(file)[1]
+def get_basename(file): return os.path.splitext(os.path.basename(file))[0]
+
+#read a PitchTier as swipe file
+class readPitchtier(swipe.Swipe):
+	def __init__(self, file):
+		[self.time, self.pitch] = praatUtil.readPitchTier(file)
 def hz2cent(f0_Hz):
     return 1200.0*np.log2( np.maximum(1E-5,np.double(f0_Hz) ))
 
@@ -59,7 +70,7 @@ def SLAM1(semitones):
         semitones = list(np.array(semitones)[::r])
     t = np.array(range(len(semitones)))/float(len(semitones))
     if 10<len(semitones):
-        import SLAM_modules.lowess as lowess
+        import SLAM_utils.lowess as lowess
         smooth = lowess.lowess(t,semitones)
     else:
         smooth = semitones
