@@ -16,7 +16,11 @@ def get_basename(file): return os.path.splitext(os.path.basename(file))[0]
 #read a PitchTier as swipe file
 class readPitchtier(swipe.Swipe):
 	def __init__(self, file):
-		[self.time, self.pitch] = praatUtil.readPitchTier(file)
+                try:
+		    [self.time, self.pitch] = praatUtil.readBinPitchTier(file)
+                except:
+		    [self.time, self.pitch] = praatUtil.readPitchTier(file)
+
 def hz2cent(f0_Hz):
     return 1200.0*np.log2( np.maximum(1E-5,np.double(f0_Hz) ))
 

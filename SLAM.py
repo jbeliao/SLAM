@@ -28,8 +28,8 @@ PARAMETERS:
 
 I/O:
 ---
-* srcFile : path to the wave or pitchTier file to process
-* inputTextgridFile  : path to the input TextGrid file 
+* srcFile : path to the wave or PitchTier file to process
+* inputTextgridFile  : path to the input TextGrid file
 * outputTextgridFile : path to the output TextGrid file
 
 tiers of interest:
@@ -60,7 +60,7 @@ speakerTier= 'locuteur'
 targetTier = 'package'
 
 #display
-examplesDisplayCount = 1 #number of example plots to do. Possibly 0
+examplesDisplayCount = 5 #number of example plots to do. Possibly 0
 minLengthDisplay = 30 #min number of f0 points for an interval to be displayed
 
 
@@ -69,7 +69,7 @@ minLengthDisplay = 30 #min number of f0 points for an interval to be displayed
 
 #imports
 from SLAM_utils import TextGrid, swipe, stylize, praatUtil
-import sys, glob, os
+import sys, glob, os, re
 import numpy as np
 
 
@@ -100,22 +100,29 @@ if len(change):
 styles = []
 totalN=0
 
-wavFiles = glob.glob('./data/*.wav')
-pitchFiles = glob.glob('./data/*.PitchTier')
+#seperate input files into tgFiles and srcFiles
+tmpFiles = glob.glob('./data/*.*')
+tgFiles = []
+srcFiles = []
+while tmpFiles:
+    filename = tmpFiles.pop(0)
+    if re.search(r'\.TEXTGRID$', filename, re.IGNORECASE):
+        tgFiles.append(filename)
+    else:
+        srcFiles.append(filename)
 
-#just ignore wave file if its PitchTier is present
-for pitchFile in pitchFiles:
-	basename = stylize.get_basename(pitchFile)
-	try: wavFiles.remove(basename+'.wav')
-	except: pass
-srcFiles = pitchFiles + wavFiles
+while tgFiles:
 
-for ifile, srcFile in enumerate(srcFiles):
-    basename = stylize.get_basename(srcFile)
+    #take a tg file from tgFiles and its related src file(s) from SrcFiles
+    inputTextgridFile = tgFiles.pop(0)
+    basename = stylize.get_basename(inputTextgridFile)
+    extension = stylize.get_extension(inputTextgridFile)
+    outputTextgridFile = './output/{}{}'.format(basename, extension)
+    srcFile = \
+    [filename for filename in srcFiles \
+        if stylize.get_basename(filename).lower() == basename.lower()]
+    for filename in srcFile: srcFiles.remove(filename)
 
-    outputTextgridFile = './output/%s.TextGrid'%basename
-    inputTextgridFile =  './data/%s.TextGrid'%basename
-     
     #Create TextGrid object
     print ''
     print 'Handling %s....'%basename
@@ -139,13 +146,24 @@ for ifile, srcFile in enumerate(srcFiles):
                            xmin = tg[targetTier].xmin(), xmax=tg[targetTier].xmax())    
             
     #Create swipe object from wave file or external PitchTier file
-    if stylize.get_extension(srcFile) == '.PitchTier':
-		print 'Reading pitch from pitch file'
-		sf = stylize.readPitchtier(srcFile)
-    else: # '.wav'
-		print 'Computing pitch on wave file'
-		sf = swipe.Swipe(srcFile, pMin=75, pMax=500, s=timeStep, t=voicedThreshold, mel=False)
-    
+    sf = None
+    #try as PitchTier files (supported formats: short text and binary)
+    if not sf:
+        for file in srcFile:
+            try: sf = stylize.readPitchtier(file)
+            except: sf = None;continue
+            print 'Reading pitch from PitchTier file {}'.format(file); break
+    # try as wave files
+    if not sf:
+        for file in srcFile:
+   	    try: sf = swipe.Swipe(file, pMin=75, pMax=500, s=timeStep, t=voicedThreshold, mel=False)
+            except:sf = None;continue
+            print 'Computing pitch on wave file {}'.format(file); break
+    # unknown format
+    if not sf:
+        print 'Error: source files {} are not supported !'.format(srcFile)
+        continue
+
     print 'Computing average register for each speaker' 
     registers = stylize.averageRegisters(sf, tg[speakerTier])
     

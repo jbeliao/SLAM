@@ -26,6 +26,39 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 
 import numpy
 
+def readBinPitchTier(fileName):
+
+      metadata=None
+      dataX=None
+      dataY=None
+      with open(fileName, "rb") as bin :
+
+          # metadata & data format
+          mdType = numpy.dtype([\
+          ('header',str, 22),
+          ('xMin','>d'),\
+          ('xMax','>d'),\
+          ('nb','>i4')])
+          dType = numpy.dtype([('x','>d'),('y','>d')])
+          try:
+              metadata = numpy.fromfile(bin, dtype=mdType, count=1)
+              header = (metadata['header'])[0].split('\t')
+              # check file header
+              if not(header[0] == 'ooBinaryFile' and \
+                     header[1] == 'PitchTier'):
+                  raise IOError('file header not recongized !')
+              # read data as 2D-array
+              data = numpy.fromfile(bin, dtype=dType, count=metadata['nb'])
+              # check file end
+              if bin.read() != '':
+                  raise EOFError
+          except:
+              raise
+
+          dataX = data['x']
+          dataY = data['y']
+          return(dataX, dataY)
+
 def readPitchTier(fileName):
 	"""
 	reads Praat PitchTier data, saved as "short text file" within Praat
