@@ -135,8 +135,8 @@ while tgFiles:
         print '    TextGrid does not have a tier named %s. Available tiers are:'%targetTier
         for t in tierNames: print '        %s'%t
         targetTier=raw_input('Type the tier name to use (+ENTER):')
-    while speakerTier not in tierNames:
-        print '    TextGrid does not have a tier named %s. Available tiers are:'%targetTier
+    while speakerTier not in tierNames and speakerTier:
+        print '    TextGrid does not have a tier named %s. Available tiers are:'%speakerTier
         for t in tierNames: print '        %s'%t
         speakerTier=raw_input('Type the tier name indicating speaker (or any categorizing variable):')
         

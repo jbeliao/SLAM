@@ -160,7 +160,7 @@ def stylizeObject(target,swipeFile, speakerTier=None,registers=None,stylizeFunct
             #reference is the value of the registers for this speaker
             reference = registers[speaker]
     else:
-        if not np.isnumeric(registers):
+        if not is_numeric_paranoid(registers):
             print('WARNING : no speaker tier provided and reference is not numeric ! not stylizing.')
             return ''
         reference = registers
@@ -169,4 +169,15 @@ def stylizeObject(target,swipeFile, speakerTier=None,registers=None,stylizeFunct
     delta_pitchs = [1E-2*(hz2cent(pitch) - hz2cent(reference)) for pitch in pitchs]
     (style,smoothed) = stylizeFunction(delta_pitchs)
     return (style,delta_pitchs,smoothed)
-    
+
+# source:
+# https://stackoverflow.com/questions/500328/identifying-numeric-and-array-types-in-numpy
+def is_numeric_paranoid(obj):
+    try:
+        obj+obj, obj-obj, obj*obj, obj**obj, obj/obj
+    except ZeroDivisionError:
+        return True
+    except Exception:
+        return False
+    else:
+        return True
