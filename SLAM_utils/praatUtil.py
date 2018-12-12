@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 """
 
 @package praatUtil This module contains some utility functions to seamlessly
@@ -26,23 +26,50 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 
 import numpy
 
-def readBinPitchTier(fileName):
+def isGoodMonoWav(fileName):
+    metadataType = numpy.dtype([\
+          ('FileTypeBlocID','S4'),
+          ('FileSize'      ,'i4'),\
+          ('FileFormatID'  ,'S4'),\
+          ('FormatBlocID'  ,'S4'),\
+          ('BlocSize'      ,'i4'),\
+          ('AudioFormat'   ,'i2'),\
+          ('NbrCanaux'     ,'i2'),\
+          ('Frequence'     ,'i4'),\
+          ('BytePerSec'    ,'i4'),\
+          ('BytePerBloc'   ,'i4'),\
+          ('BitsPerSample' ,'i4'),\
+          ('DataBlocID'    ,'S4'),\
+          ('DataSize'      ,'i4')])
 
-      metadata=None
-      dataX=None
-      dataY=None
+    with open(fileName,"rb") as bin :
+        md = numpy.fromfile(bin, dtype=metadataType, count=1)[0]
+
+    FileTypeBlocID = md['FileTypeBlocID'].astype(str)
+    FileFormatID = md['FileFormatID'].astype(str)
+    NbrCanaux = md['NbrCanaux'].astype(int)
+
+    if NbrCanaux > 1: print('Error: Swipe requires monochannel wav but {} contains {} channels !'.format(fileName, NbrCanaux))
+
+    return (FileTypeBlocID == 'RIFF' and FileFormatID == 'WAVE' and NbrCanaux == 1)
+
+def readBinPitchTier(fileName):
+      metadataType = numpy.dtype([\
+           ('header','S22'),\
+           ('xMin'  ,'>d'),\
+           ('xMax'  ,'>d'),\
+           ('nb'    ,'>i4')])
+      dataType = numpy.dtype([('x','>d'),('y','>d')])
       with open(fileName, "rb") as bin :
           try:
               # header
-              header = numpy.fromfile(bin, dtype='S22', count=1).astype(str)[0].split('\t')
-              xMin   = numpy.fromfile(bin, dtype='>d', count=1)[0]
-              xMax   = numpy.fromfile(bin, dtype='>d', count=1)[0]
-              nb     = numpy.fromfile(bin, dtype='>i4', count=1).astype(int)[0]
+              md = numpy.fromfile(bin, dtype=metadataType, count=1)[0]
               # check file header
-              if not (header[0]== 'ooBinaryFile' and header[1] == 'PitchTier'):
+              header = md['header'].astype(str)
+              nb = md['nb'].astype(int)
+              if header != 'ooBinaryFile\tPitchTier':
                   raise IOError('file header not recongized !')
               # read data as 2D-array
-              dataType = numpy.dtype([('x','>d'),('y','>d')])
               data = numpy.fromfile(bin, dtype=dataType, count=nb)
               # check file end
               if len(bin.read()) > 0:
@@ -50,9 +77,7 @@ def readBinPitchTier(fileName):
           except:
               raise
 
-          dataX = data['x']
-          dataY = data['y']
-          return(dataX, dataY)
+          return(data['x'], data['y'])
 
 def readPitchTier(fileName):
 	"""

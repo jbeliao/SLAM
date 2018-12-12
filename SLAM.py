@@ -16,7 +16,7 @@
 
 
 # -*- coding: utf-8 -*-
-""""
+"""
 #####################################################################
 Automatic Stylizer.
 #####################################################################
@@ -57,10 +57,10 @@ voicedThreshold = 0.2 #for swipe
 
 #Tiers for the speaker and the target intervals, put your own tier names
 speakerTier= 'locuteur'
-targetTier = 'package'
+targetTier = 'syll'
 
 #display
-examplesDisplayCount = 5 #number of example plots to do. Possibly 0
+examplesDisplayCount = 3 #number of example plots to do. Possibly 0
 minLengthDisplay = 30 #min number of f0 points for an interval to be displayed
 
 
@@ -155,6 +155,8 @@ while tgFiles:
     # try as wave files
     if not sf:
         for file in srcFile:
+            #check the header of WAVE
+            if not praatUtil.isGoodMonoWav(file): continue
             try: sf = swipe.Swipe(file, pMin=75, pMax=500, s=timeStep, t=voicedThreshold, mel=False)
             except:sf = None;continue
             print('Computing pitch on wave file {}'.format(file)); break
