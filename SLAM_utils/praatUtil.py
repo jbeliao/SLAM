@@ -32,25 +32,20 @@ def readBinPitchTier(fileName):
       dataX=None
       dataY=None
       with open(fileName, "rb") as bin :
-
-          # metadata & data format
-          mdType = numpy.dtype([\
-          ('header',str, 22),
-          ('xMin','>d'),\
-          ('xMax','>d'),\
-          ('nb','>i4')])
-          dType = numpy.dtype([('x','>d'),('y','>d')])
           try:
-              metadata = numpy.fromfile(bin, dtype=mdType, count=1)
-              header = (metadata['header'])[0].split('\t')
+              # header
+              header = numpy.fromfile(bin, dtype='S22', count=1).astype(str)[0].split('\t')
+              xMin   = numpy.fromfile(bin, dtype='>d', count=1)[0]
+              xMax   = numpy.fromfile(bin, dtype='>d', count=1)[0]
+              nb     = numpy.fromfile(bin, dtype='>i4', count=1).astype(int)[0]
               # check file header
-              if not(header[0] == 'ooBinaryFile' and \
-                     header[1] == 'PitchTier'):
+              if not (header[0]== 'ooBinaryFile' and header[1] == 'PitchTier'):
                   raise IOError('file header not recongized !')
               # read data as 2D-array
-              data = numpy.fromfile(bin, dtype=dType, count=metadata['nb'])
+              dataType = numpy.dtype([('x','>d'),('y','>d')])
+              data = numpy.fromfile(bin, dtype=dataType, count=nb)
               # check file end
-              if bin.read() != '':
+              if len(bin.read()) > 0:
                   raise EOFError
           except:
               raise

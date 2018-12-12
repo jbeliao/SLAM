@@ -34,7 +34,7 @@ I/O:
 
 tiers of interest:
 ------------------
-* speakerTier : average register of each speaker is computed 
+* speakerTier : average register of each speaker is computed
                 using this tier. For each different label in
                 this tier, we assume a different speaker, for
                 whom the average register is computed.
@@ -43,10 +43,10 @@ tiers of interest:
 
 display:
 -------
-* displayExamples : True or False: whether or not to display examples 
+* displayExamples : True or False: whether or not to display examples
                    of stylized f0 segments
 * displaySummary : True or False: whether or not to display a small
-                   summary of the distribution of the stylizes 
+                   summary of the distribution of the stylizes
 #####################################################################"""
 
 
@@ -56,7 +56,7 @@ timeStep = .001 #in seconds, step for swipe pitch analysis
 voicedThreshold = 0.2 #for swipe
 
 #Tiers for the speaker and the target intervals, put your own tier names
-speakerTier= 'locuteur' 
+speakerTier= 'locuteur'
 targetTier = 'package'
 
 #display
@@ -72,8 +72,7 @@ from SLAM_utils import TextGrid, swipe, stylize, praatUtil
 import sys, glob, os, re
 import numpy as np
 
-
-change = raw_input("""
+change = stylize.input_SLAM("""
 Current parameters are:
   tier to use for categorizing registers : %s
   tier to stylize                        : %s
@@ -81,19 +80,19 @@ Current parameters are:
 
   ENTER = ok
   anything+ENTER = change
-  
+
   """%(speakerTier, targetTier,examplesDisplayCount))
-  
-print change
+
+print(change)
 if len(change):
-    new = raw_input('reference tier (empty = keep %s) : '%speakerTier)
+    new = stylize.input_SLAM('reference tier (empty = keep %s) : '%speakerTier)
     if len(new):speakerTier=new
-    new = raw_input('target tier (empty = keep %s) : '%targetTier)
+    new = stylize.input_SLAM('target tier (empty = keep %s) : '%targetTier)
     if len(new):targetTier=new
-    new = raw_input('number of displays (empty = keep %d) : '%examplesDisplayCount)
+    new = stylize.input_SLAM('number of displays (empty = keep %d) : '%examplesDisplayCount)
     if len(new):examplesDisplayCount=int(new)
-    
-  
+
+
 
 
 #all styles, for statistics
@@ -124,27 +123,27 @@ while tgFiles:
     for filename in srcFile: srcFiles.remove(filename)
 
     #Create TextGrid object
-    print ''
-    print 'Handling %s....'%basename
-    print 'Loading input TextGrid...'
+    print('')
+    print('Handling %s....'%basename)
+    print('Loading input TextGrid...')
     tg = TextGrid.TextGrid()
     tg.read(inputTextgridFile)
     tierNames = [t.name() for t in tg]
-    
+
     while targetTier not in tierNames:
-        print '    TextGrid does not have a tier named %s. Available tiers are:'%targetTier
-        for t in tierNames: print '        %s'%t
-        targetTier=raw_input('Type the tier name to use (+ENTER):')
+        print('    TextGrid does not have a tier named %s. Available tiers are:'%targetTier)
+        for t in tierNames: print('        %s'%t)
+        targetTier=stylize.input_SLAM('Type the tier name to use (+ENTER):')
     while speakerTier not in tierNames and speakerTier:
-        print '    TextGrid does not have a tier named %s. Available tiers are:'%speakerTier
-        for t in tierNames: print '        %s'%t
-        speakerTier=raw_input('Type the tier name indicating speaker (or any categorizing variable):')
-        
-    
+        print('    TextGrid does not have a tier named %s. Available tiers are:'%speakerTier)
+        for t in tierNames: print('        %s'%t)
+        speakerTier=stylize.input_SLAM('Type the tier name indicating speaker (or any categorizing variable):')
+
+
     #create interval tier for output
-    newTier = TextGrid.IntervalTier(name = '%sStyle'%targetTier, 
-                           xmin = tg[targetTier].xmin(), xmax=tg[targetTier].xmax())    
-            
+    newTier = TextGrid.IntervalTier(name = '%sStyle'%targetTier,
+                           xmin = tg[targetTier].xmin(), xmax=tg[targetTier].xmax())
+
     #Create swipe object from wave file or external PitchTier file
     sf = None
     #try as PitchTier files (supported formats: short text and binary)
@@ -152,59 +151,62 @@ while tgFiles:
         for file in srcFile:
             try: sf = stylize.readPitchtier(file)
             except: sf = None;continue
-            print 'Reading pitch from PitchTier file {}'.format(file); break
+            print('Reading pitch from PitchTier file {}'.format(file)); break
     # try as wave files
     if not sf:
         for file in srcFile:
-   	    try: sf = swipe.Swipe(file, pMin=75, pMax=500, s=timeStep, t=voicedThreshold, mel=False)
+            try: sf = swipe.Swipe(file, pMin=75, pMax=500, s=timeStep, t=voicedThreshold, mel=False)
             except:sf = None;continue
-            print 'Computing pitch on wave file {}'.format(file); break
+            print('Computing pitch on wave file {}'.format(file)); break
     # unknown format
     if not sf:
-        print 'Error: source files {} are not supported !'.format(srcFile)
+        print('Error: source files {} are not supported !'.format(srcFile))
         continue
 
-    print 'Computing average register for each speaker' 
+    print('Computing average register for each speaker')
     registers = stylize.averageRegisters(sf, tg[speakerTier])
-    
-        
-    	
-    print 'Stylizing each interval of the target tier'
-    
-    #computing at which iterations to give progress  
+
+
+
+    print('Stylizing each interval of the target tier')
+
+    #computing at which iterations to give progress
     LEN = float(len(tg[targetTier]))
     totalN+=LEN
     POSdisplay = set([int(float(i)/100.0*LEN) for i in range(0,100,10)])
 
     for pos,interval in enumerate(tg[targetTier]):
         if pos in POSdisplay:
-            print 'stylizing: %d percents'%(pos/LEN*100.0)
-            
+            print('stylizing: %d percents'%(pos/LEN*100.0))
+
         #compute style of current interval
         (style,original, smooth)=stylize.stylizeObject(interval,sf,tg[speakerTier],registers)
-        
+
         #if style computed, adding it to global list
         if len(style) and (style!='_') :styles+=[style]
-        
+
         #then add an interval with that style to the (new) style tier
         newInterval = TextGrid.Interval(interval.xmin(), interval.xmax(), style)
-        newTier.append(newInterval)    
-        
+        newTier.append(newInterval)
+
         #display if interval is sufficiently large
         if (examplesDisplayCount>0) and len(style) and len(original)>=minLengthDisplay:
             import pylab as pl
             pl.figure(1)
             pl.clf()
             pl.plot(np.linspace(0,1,len(original)),original,'b')
-            pl.hold(True)
+            try:
+                pl.hold(True)
+            except:
+                pass
             pl.plot(np.linspace(0,1,len(smooth)),smooth,'r')
             pl.title(style)
             pl.grid(True)
             pl.show()
             examplesDisplayCount-=1
-    
+
     #done, now writing tier into textgrid and saving textgrid
-    print 'Saving computed styles in file %s'%outputTextgridFile
+    print('Saving computed styles in file %s'%outputTextgridFile)
     tg.append(newTier)
     tg.write(outputTextgridFile)
 
@@ -218,22 +220,22 @@ for unique_style in set(styles):
 
 
 #valeurs triees par importance decroissante
-unsorted_values = np.array(count.values())
+unsorted_values = np.array(list(count.values()))
 nbStylesRaw = len(unsorted_values)
 total = float(sum(unsorted_values))
 
 #remove styles that appear less than 0.5 percents of the time
-for style in count.keys():
+for style in list(count.keys()):
     if count[style]/total < 0.005: del count[style]
 
-unsorted_values = np.array(count.values())
-stylesNames = count.keys()
+unsorted_values = np.array(list(count.values()))
+stylesNames = list(count.keys())
 argsort = np.argsort(unsorted_values)[::-1] # from most to less important
 sorted_values = unsorted_values[argsort]
 
 total = float(sum(unsorted_values))
-L = min(len(count.keys()),20)
-print """
+L = min(len(list(count.keys())),20)
+print("""
 ------------------------------------------------------------------
 SLAM analysis overall summary:
 ------------------------------------------------------------------
@@ -243,27 +245,26 @@ SLAM analysis overall summary:
 - %d resulting nonnegligible styles (appearing more than 0.5%% of the time)
 ------------------------------------------------------------------
 - The %d most important nonnegligible styles along with their frequency are:"""%(
-totalN,                                                                                 
+totalN,
 len(styles),
 len(set(styles)),
 len(count),
-L)
+L))
 styleNames=sorted(count,key=count.get)
 styleNames.reverse()
 for styleName in styleNames[:L]:
-    print '\t%s\t:\t:%0.1f%% (%d occurrences)'%(styleName,count[styleName]/total*100.0,count[styleName])
-print '''
+    print('\t%s\t:\t:%0.1f%% (%d occurrences)'%(styleName,count[styleName]/total*100.0,count[styleName]))
+print('''
 
 x------------------------------------------x---------------------x
 | explained proportion of the observations | number of styles    |
 |         (percents)                       |                     |
-x------------------------------------------x---------------------x'''
+x------------------------------------------x---------------------x''')
 
 cumulative_values = np.cumsum(sorted_values)
 cumulative_values = cumulative_values/float(cumulative_values[-1])
 
 for P in [70, 75, 80, 85, 90, 95, 99]:
     N = np.nonzero(cumulative_values>float(P)/100.0)[0][0]+1
-    print '|                %d                        |         %d          |'%(P,N)
-print 'x------------------------------------------x---------------------x'
-    
+    print('|                %d                        |         %d          |'%(P,N))
+print('x------------------------------------------x---------------------x')
