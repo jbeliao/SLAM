@@ -160,10 +160,11 @@ def stylizeObject(target,swipeFile, speakerTier=None,registers=None,stylizeFunct
             #reference is the value of the registers for this speaker
             reference = registers[speaker]
     else:
-        if not is_numeric_paranoid(registers):
-            print('WARNING : no speaker tier provided and reference is not numeric ! not stylizing.')
-            return ''
         reference = registers
+
+    if not is_numeric_paranoid(reference):
+        print('WARNING : no speaker tier provided and reference is not numeric ! not stylizing.')
+        return ('_',[],[])
 
     #delta with reference in semitones
     delta_pitchs = [1E-2*(hz2cent(pitch) - hz2cent(reference)) for pitch in pitchs]
