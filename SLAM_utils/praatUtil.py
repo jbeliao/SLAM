@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 """
 
 @package praatUtil This module contains some utility functions to seamlessly
@@ -25,6 +25,59 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy
+
+def isGoodMonoWav(fileName):
+    metadataType = numpy.dtype([\
+          ('FileTypeBlocID','S4'),
+          ('FileSize'      ,'i4'),\
+          ('FileFormatID'  ,'S4'),\
+          ('FormatBlocID'  ,'S4'),\
+          ('BlocSize'      ,'i4'),\
+          ('AudioFormat'   ,'i2'),\
+          ('NbrCanaux'     ,'i2'),\
+          ('Frequence'     ,'i4'),\
+          ('BytePerSec'    ,'i4'),\
+          ('BytePerBloc'   ,'i4'),\
+          ('BitsPerSample' ,'i4'),\
+          ('DataBlocID'    ,'S4'),\
+          ('DataSize'      ,'i4')])
+
+    with open(fileName,"rb") as bin :
+        md = numpy.fromfile(bin, dtype=metadataType, count=1)[0]
+
+    FileTypeBlocID = md['FileTypeBlocID'].astype(str)
+    FileFormatID = md['FileFormatID'].astype(str)
+    NbrCanaux = md['NbrCanaux'].astype(int)
+
+    if NbrCanaux > 1: print('Error: Swipe requires monochannel wav but {} contains {} channels !'.format(fileName, NbrCanaux))
+
+    return (FileTypeBlocID == 'RIFF' and FileFormatID == 'WAVE' and NbrCanaux == 1)
+
+def readBinPitchTier(fileName):
+      metadataType = numpy.dtype([\
+           ('header','S22'),\
+           ('xMin'  ,'>d'),\
+           ('xMax'  ,'>d'),\
+           ('nb'    ,'>i4')])
+      dataType = numpy.dtype([('x','>d'),('y','>d')])
+      with open(fileName, "rb") as bin :
+          try:
+              # header
+              md = numpy.fromfile(bin, dtype=metadataType, count=1)[0]
+              # check file header
+              header = md['header'].astype(str)
+              nb = md['nb'].astype(int)
+              if header != 'ooBinaryFile\tPitchTier':
+                  raise IOError('file header not recongized !')
+              # read data as 2D-array
+              data = numpy.fromfile(bin, dtype=dataType, count=nb)
+              # check file end
+              if len(bin.read()) > 0:
+                  raise EOFError
+          except:
+              raise
+
+          return(data['x'], data['y'])
 
 def readPitchTier(fileName):
 	"""

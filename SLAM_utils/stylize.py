@@ -7,7 +7,7 @@ import numpy as np
 import SLAM_utils.TextGrid as tg
 from SLAM_utils import praatUtil
 from SLAM_utils import swipe
-import os
+import os,sys
 
 #handy funciotns
 def get_extension(file): return os.path.splitext(file)[1]
@@ -15,8 +15,12 @@ def get_basename(file): return os.path.splitext(os.path.basename(file))[0]
 
 #read a PitchTier as swipe file
 class readPitchtier(swipe.Swipe):
-	def __init__(self, file):
-		[self.time, self.pitch] = praatUtil.readPitchTier(file)
+    def __init__(self, file):
+        try:
+            [self.time, self.pitch] = praatUtil.readBinPitchTier(file)
+        except:
+            [self.time, self.pitch] = praatUtil.readPitchTier(file)
+
 def hz2cent(f0_Hz):
     return 1200.0*np.log2( np.maximum(1E-5,np.double(f0_Hz) ))
 
@@ -156,13 +160,31 @@ def stylizeObject(target,swipeFile, speakerTier=None,registers=None,stylizeFunct
             #reference is the value of the registers for this speaker
             reference = registers[speaker]
     else:
-        if not np.isnumeric(registers):
-            print('WARNING : no speaker tier provided and reference is not numeric ! not stylizing.')
-            return ''
         reference = registers
+
+    if not is_numeric_paranoid(reference):
+        print('WARNING : no speaker tier provided and reference is not numeric ! not stylizing.')
+        return ('_',[],[])
 
     #delta with reference in semitones
     delta_pitchs = [1E-2*(hz2cent(pitch) - hz2cent(reference)) for pitch in pitchs]
     (style,smoothed) = stylizeFunction(delta_pitchs)
     return (style,delta_pitchs,smoothed)
-    
+
+# source:
+# https://stackoverflow.com/questions/500328/identifying-numeric-and-array-types-in-numpy
+def is_numeric_paranoid(obj):
+    try:
+        obj+obj, obj-obj, obj*obj, obj**obj, obj/obj
+    except ZeroDivisionError:
+        return True
+    except Exception:
+        return False
+    else:
+        return True
+
+# a simple Python 2/3 compatible input()
+def input_SLAM(inp):
+    vers = sys.version_info.major
+    if vers > 2: return input(inp) # Python 3
+    else: return raw_input(inp) # Python 2
